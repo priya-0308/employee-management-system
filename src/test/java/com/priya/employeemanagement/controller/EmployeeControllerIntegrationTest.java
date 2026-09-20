@@ -1,6 +1,7 @@
 package com.priya.employeemanagement.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.priya.employeemanagement.config.RestAccessDeniedHandler;
 import com.priya.employeemanagement.config.SecurityConfig;
 import com.priya.employeemanagement.dto.EmployeeRequest;
 import com.priya.employeemanagement.dto.EmployeeResponse;
@@ -29,7 +30,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(EmployeeController.class)
-@Import(SecurityConfig.class)
+@Import({SecurityConfig.class, RestAccessDeniedHandler.class})
 @TestPropertySource(properties = {
         "app.security.admin.username=admin",
         "app.security.admin.password=admin123",
@@ -122,7 +123,9 @@ class EmployeeControllerIntegrationTest {
         mockMvc.perform(post("/api/employees")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.status").value(403))
+                .andExpect(jsonPath("$.message").value("Role USER is not authorized to perform this action"));
 
         verify(employeeService, never()).createEmployee(any(EmployeeRequest.class));
     }
